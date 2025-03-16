@@ -1,4 +1,4 @@
-package com.example.ecoeye.ui.theme
+package com.ecoeye.ui.theme
 
 import android.app.Activity
 import android.os.Build

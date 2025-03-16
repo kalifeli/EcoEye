@@ -1,4 +1,4 @@
-package com.example.ecoeye.ui.theme
+package com.ecoeye.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

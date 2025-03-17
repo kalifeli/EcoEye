@@ -6,15 +6,14 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.ecoeye.caratteristiche.bluetooth.BleManager
 import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
 import com.ecoeye.caratteristiche.navigazione.NavGraph
+
 private  const val REQUEST_CODE_PERMISSIONS = 1001
 
 class MainActivity : ComponentActivity() {
@@ -30,15 +29,12 @@ class MainActivity : ComponentActivity() {
         )
     } else {
         arrayOf(
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_ADVERTISE,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
     }
 
-    fun checkAndRequestPermissions(){
+    private fun checkAndRequestPermissions(){
         // Lista che contiene i permessi ancora non concessi
         val permissionsToRequest = requiredPermissions.filter { permission ->
             ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
@@ -54,7 +50,7 @@ class MainActivity : ComponentActivity() {
                 AlertDialog.Builder(this)
                     .setTitle("Permessi necessari")
                     .setMessage("L'app necessita dei seguenti permessi per funzionare correttamente.")
-                    .setPositiveButton("OK") { dialog, _ ->
+                    .setPositiveButton("OK") { _, _ ->
                         ActivityCompat.requestPermissions(
                             this,
                             permissionsToRequest.toTypedArray(),
@@ -94,5 +90,11 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         checkAndRequestPermissions()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // libero le risorse
+        bluetoothViewModel.disconnectDevice()
     }
 }

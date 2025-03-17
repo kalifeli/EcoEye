@@ -1,10 +1,8 @@
 package com.ecoeye.ui.schermate
 
-import android.util.Log
+import android.bluetooth.BluetoothDevice
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -41,12 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
 import com.ecoeye.caratteristiche.bluetooth.DispositivoBLE
@@ -58,6 +52,7 @@ fun NearbyDevicesScreen(
     bluetoothViewModel: BluetoothViewModel,
     navController: NavController
 ) {
+
     val scannedDevices by bluetoothViewModel.scannedDevices.collectAsState()
     val scanning by bluetoothViewModel.scanning.collectAsState()
 
@@ -95,7 +90,6 @@ fun NearbyDevicesScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // 3. Pulsanti per avviare/fermare la scansione
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -108,13 +102,6 @@ fun NearbyDevicesScreen(
                         ),
                         onClick = {
                             bluetoothViewModel.startDiscovery()
-                            // Esempio: aggiungi manualmente due dispositivi per test
-                            bluetoothViewModel.addScannedDevice(
-                                DispositivoBLE("Iphone(10)", "123456789", 10)
-                            )
-                            bluetoothViewModel.addScannedDevice(
-                                DispositivoBLE("Ipad(10)", "543853894571", 19)
-                            )
                         }
                     ) {
                         Text("Avvia Scansione")
@@ -131,7 +118,6 @@ fun NearbyDevicesScreen(
                     }
                 }
 
-                // 4. Indicatore di caricamento se scanning == true
                 if (scanning) {
                     Row(
                         modifier = Modifier
@@ -155,7 +141,6 @@ fun NearbyDevicesScreen(
                     }
                 }
 
-                // 5. Lista dei dispositivi scansionati
                 Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
                         modifier = Modifier
@@ -164,7 +149,12 @@ fun NearbyDevicesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(scannedDevices) { dispositivoBLE ->
-                            CardDispositivoBLE(dispositivoBLE = dispositivoBLE)
+                            CardDispositivoBLE(
+                                dispositivoBLE = dispositivoBLE,
+                                onClickConnect = {
+                                    bluetoothViewModel.connectToDevice(dispositivoBLE.device)
+                                }
+                            )
                         }
                     }
                 }
@@ -174,7 +164,10 @@ fun NearbyDevicesScreen(
 }
 
 @Composable
-fun CardDispositivoBLE(dispositivoBLE: DispositivoBLE) {
+fun CardDispositivoBLE(
+    dispositivoBLE: DispositivoBLE,
+    onClickConnect: (BluetoothDevice) -> Unit
+) {
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -207,7 +200,7 @@ fun CardDispositivoBLE(dispositivoBLE: DispositivoBLE) {
                 Text(text = "Rssi: ${dispositivoBLE.rssi}", color = Color.DarkGray)
             }
             Button(
-                onClick = { /* Azione di connessione */ },
+                onClick = { onClickConnect(dispositivoBLE.device) },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Green,
                     contentColor = Color.Black,
@@ -222,14 +215,15 @@ fun CardDispositivoBLE(dispositivoBLE: DispositivoBLE) {
 }
 
 
-@Preview
-@Composable
-private fun CardDispositivoPreview() {
-    CardDispositivoBLE(
-        DispositivoBLE(
-            nome = "Iphone(10)",
-            indirizzo = "123456789",
-            rssi = 10
-        )
-    )
-}
+//@Preview
+//@Composable
+//private fun CardDispositivoPreview() {
+//    CardDispositivoBLE(
+//        DispositivoBLE(
+//            nome = "Iphone(10)",
+//            indirizzo = "123456789",
+//            rssi = 10,
+//            device = null
+//        )
+//    )
+//}

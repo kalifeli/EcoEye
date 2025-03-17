@@ -3,6 +3,7 @@ package com.ecoeye.caratteristiche.bluetooth
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -14,11 +15,8 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class BluetoothViewModel(application: Application): AndroidViewModel(application), BluetoothController{
     private val context = getApplication<Application>()
@@ -29,10 +27,25 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
     private val bluetoothAdapter by lazy {
         bluetoothManager?.adapter
     }
+
     private val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
 
+    // Istanza del BleManager
+    private val bleManager = BleManager(application)
+
+    private val _connectionState : MutableStateFlow<BluetoothConnectionState> = MutableStateFlow(BluetoothConnectionState.DISCONNECTED)
+    val connectionState : StateFlow<BluetoothConnectionState> = _connectionState
+
+    init {
+        bleManager.connectionStateCallback = { state ->
+            _connectionState.value = state
+        }
+    }
+
+    // Tempo massimo per la scansione dei dispositivi BLE vicini
     private val TIMEOUT : Long = 10000
 
+    // Gestisce alcune operazioni sul thread
     private val handler = Handler(Looper.getMainLooper())
 
     private val _scanning :MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -75,8 +88,6 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
         }
     }
 
-
-
     private val  scanCallback : ScanCallback = object : ScanCallback(){
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
@@ -92,7 +103,8 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
                     val newDevice = DispositivoBLE(
                             nome = dispositivo.device.name ?: "Dispositivo sconosciuto",
                             indirizzo = dispositivo.device.address,
-                            rssi = dispositivo.rssi
+                            rssi = dispositivo.rssi,
+                            device = dispositivo.device
                         )
                         addScannedDevice(newDevice)
                 }
@@ -113,7 +125,7 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
 
 
     override fun startDiscovery() {
-            if (_scanning.value == false) {
+            if (!_scanning.value) {
                 _scanning.value = true
                 // Avvia la scansione
                 if (ActivityCompat.checkSelfPermission(
@@ -141,7 +153,7 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
 
     @SuppressLint("MissingPermission")
     override fun stopDiscovery() {
-        if (_scanning.value == true) {
+        if (_scanning.value) {
             _scanning.value = false
             bluetoothLeScanner?.stopScan(scanCallback)
             handler.removeCallbacksAndMessages(null)
@@ -150,6 +162,19 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
 
     override fun release() {
         TODO("Not yet implemented")
+    }
+
+    fun connectToDevice(device: BluetoothDevice){
+        bleManager.connectToDevice(device)
+    }
+
+    fun disconnectDevice(){
+        bleManager.closeConnection()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        disconnectDevice()
     }
 
 

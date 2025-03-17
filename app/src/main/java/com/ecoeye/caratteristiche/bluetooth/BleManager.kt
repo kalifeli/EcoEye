@@ -5,14 +5,18 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+
 import android.util.Log
 import androidx.core.app.ActivityCompat
 
+private const val SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+private const val CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+@SuppressLint("MissingPermission")
 class BleManager(private val context: Context) {
 
     // La variabile viene usata per gestire la connessione BLE, permette al servizio di interagire con il dispositovo BLE
@@ -41,79 +45,65 @@ class BleManager(private val context: Context) {
             Log.d("BleService", "PERMESSI NON CONCESSI")
             return
         }
-        // Se c'è già una connessione aperta, chiudila
-        bluetoothGatt?.close()
-        bluetoothGatt = null
-
         lastDevice = device
-        bluetoothGatt = device.connectGatt(context.applicationContext, false, gattCallback)
+        bluetoothGatt = device.connectGatt(context.applicationContext, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
         Log.d("BleService", "Tentativo di connessione a ${device.address}")
     }
 
+    private var currentConnectionAttempt = 1
+    private val MAX_CONNECTION_ATTEMPTS = 5
     /**
      * Callback per gestire gli eventi della connessione GATT.
      */
     private val gattCallback = object : BluetoothGattCallback() {
         // Funzione che gestisce i cambiamenti dello stato della connessione con il dispositivo.
-        override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+        @SuppressLint("MissingPermission")
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             Log.d("BleService", "onConnectionStateChange: status=$status, newState=$newState")
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.BLUETOOTH_CONNECT
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
+            if(status == BluetoothGatt.GATT_SUCCESS){
+                if(newState == BluetoothGatt.STATE_CONNECTED){
+                    Log.d("BleService", "Connessione Stabilita!")
+                    connectionStateCallback?.invoke(BluetoothConnectionState.CONNECTED)
+                    gatt.discoverServices()
+                    this@BleManager.bluetoothGatt = gatt
+                    lastDevice = null
+                    currentConnectionAttempt = 1
+                }else if(newState == BluetoothGatt.STATE_DISCONNECTED){
+                    Log.d("BleService", "Dispositivo Disconnesso!")
+                    connectionStateCallback?.invoke(BluetoothConnectionState.DISCONNECTED)
+                    gatt.close()
+                }
+            }else{
+                gatt.close()
+                currentConnectionAttempt += 1
+                Log.d("BleService", "Tentativo di connessione $currentConnectionAttempt / $MAX_CONNECTION_ATTEMPTS")
+                connectionStateCallback?.invoke(BluetoothConnectionState.CONNECTING)
 
-                return
-            }else {
-                when (newState) {
-                    BluetoothProfile.STATE_CONNECTED -> {
-                        Log.d("BleService", "Connesso al GATT server")
-                        gatt?.discoverServices()
-                        connectionStateCallback?.invoke(BluetoothConnectionState.CONNECTED)
-                        // Quando la connessione è avvenuta con successo, inizio la scoperta dei servizi messi a disposizione dal dispositivo BLE
-
-                    }
-
-                    BluetoothProfile.STATE_DISCONNECTED -> {
-                        Log.d("BleService", "Disconnesso dal GATT server")
-                        connectionStateCallback?.invoke(BluetoothConnectionState.DISCONNECTED)
-                        // Se riceviamo il GATT error 133, tentiamo il retry
-                        if (status == 133) {
-                            gatt?.close() // Chiudiamo la connessione corrente
-                            Log.d(
-                                "BleService",
-                                "Retry connection in 2 secondi a ${lastDevice?.address}"
-                            )
-                            handler.postDelayed({
-                                lastDevice?.let { device ->
-                                    Log.d("BleService", "Retry connection to ${device.address}")
-                                    connectToDevice(device)
-                                }
-                            }, 5000)
-                        }
-                    }
-
-                    BluetoothProfile.STATE_CONNECTING -> {
-                        Log.d("BleService", "Connessione in corso al GATT server...")
-                        connectionStateCallback?.invoke(BluetoothConnectionState.CONNECTING)
-                    }
+                if(currentConnectionAttempt <= MAX_CONNECTION_ATTEMPTS){
+                    lastDevice?.let { connectToDevice(it) }
+                }else{
+                    Log.d("BleService", "Non è possibile connettersi al dispositivo BLE")
                 }
             }
         }
 
         // Questa funzione viene eseguita subito dopo aver scoperto i servizi.
-        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Log.d("BleService", "Servizi scoperti: ${gatt?.services}")
-            } else {
-                Log.w("BleService", "Scoperta dei servizi fallita, status: $status")
-            }
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+           with(gatt){
+               printGattTable()
+               gatt.requestMtu(517)
+               Log.d("BleService", "Modifica dello spazio MTU...")
+           }
+        }
+
+        override fun onMtuChanged(gatt: BluetoothGatt?, mtu: Int, status: Int) {
+            super.onMtuChanged(gatt, mtu, status)
+
         }
     }
     /**
      * Permette di chiudere la connessione GATT liberando le risorse.
      */
-    @SuppressLint("MissingPermission")
     fun closeConnection() {
         bluetoothGatt?.close()
         bluetoothGatt = null

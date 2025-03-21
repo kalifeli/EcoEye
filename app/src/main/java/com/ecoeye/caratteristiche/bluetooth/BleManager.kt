@@ -91,7 +91,7 @@ class BleManager(private val context: Context) {
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
            with(gatt){
                printGattTable()
-               gatt.requestMtu(517)
+               gatt.requestMtu(517) //23
                Log.d("BleService", "Modifica dello spazio MTU...")
            }
         }

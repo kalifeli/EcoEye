@@ -2,9 +2,17 @@
 
 package com.ecoeye.ui.schermate
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +38,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -103,11 +112,9 @@ fun HomeScreen(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // 1. Microfono
-                    MicrophoneItem(
-                        backgroundColor = Color.White,
-                        iconTint = Color.Black,
-                        size = 120
+                    AnimatedMicButton(
+                        modifier = Modifier,
+                        onClick = {}
                     )
 
                     // 2. Titolo "Messaggi Rapidi"
@@ -190,6 +197,57 @@ fun RapidMessage(
     }
 
 }
+
+@Composable
+fun AnimatedMicButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // L'animazione si avvia quando il pulsante è attivo; qui usiamo un infiniteTransition
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    // Animiamo un valore che rappresenta la scala dell'onda
+    val waveScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = ""
+    )
+    // Animiamo anche l'alpha (trasparenza) dell'onda
+    val waveAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = ""
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(120.dp)
+            .clickable { onClick() }
+    ) {
+        // Disegna le onde usando un Canvas
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                color = Color.Green.copy(alpha = waveAlpha),
+                radius = size.minDimension / 2 * waveScale,
+                center = center
+            )
+        }
+        // L'icona del microfono sopra l'animazione
+        Icon(
+            painter = painterResource(id = R.drawable.ic_microfono), // Assicurati di avere questo drawable
+            contentDescription = "Microphone Icon",
+            tint = Color.Black,
+            modifier = Modifier.size(60.dp)
+        )
+    }
+}
+
 
 @Preview
 @Composable

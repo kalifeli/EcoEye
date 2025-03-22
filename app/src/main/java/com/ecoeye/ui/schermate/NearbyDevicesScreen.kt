@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardColors
@@ -42,6 +44,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ecoeye.caratteristiche.bluetooth.BluetoothConnectionState
 import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
 import com.ecoeye.caratteristiche.bluetooth.DispositivoBLE
 import com.example.ecoeye.R
@@ -52,9 +55,12 @@ fun NearbyDevicesScreen(
     bluetoothViewModel: BluetoothViewModel,
     navController: NavController
 ) {
-
+    // Dispositivi scansionati
     val scannedDevices by bluetoothViewModel.scannedDevices.collectAsState()
+    // Stato della scansione
     val scanning by bluetoothViewModel.scanning.collectAsState()
+    // Stato della connessione bluetooth
+    val connectionState by bluetoothViewModel.connectionState.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -65,7 +71,7 @@ fun NearbyDevicesScreen(
         )
 
         Scaffold(
-            containerColor = Color.Transparent,  // Importante per mostrare l'immagine di sfondo
+            containerColor = Color.Transparent,
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text("Dispositivi Vicini") },
@@ -97,24 +103,32 @@ fun NearbyDevicesScreen(
                     Button(
                         border = BorderStroke(1.dp, Color.DarkGray),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = Color.Green,
+                            contentColor = Color.White,
+                            disabledContentColor = Color.DarkGray,
+                            disabledContainerColor = Color.Gray
                         ),
+                        enabled = !scanning,
                         onClick = {
                             bluetoothViewModel.startDiscovery()
                         }
                     ) {
-                        Text("Avvia Scansione")
+                       // Text("Avvia Scansione")
+                        Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = "Inizia Scansione")
                     }
                     Button(
                         border = BorderStroke(1.dp, Color.DarkGray),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = Color.Green,
+                            contentColor = Color.White,
+                            disabledContentColor = Color.DarkGray,
+                            disabledContainerColor = Color.Gray
                         ),
+                        enabled = scanning,
                         onClick = { bluetoothViewModel.stopDiscovery() }
                     ) {
-                        Text("Ferma Scansione")
+                        // Text("Ferma Scansione")
+                        Icon(imageVector = Icons.Filled.Close, contentDescription = "Ferma Scansione")
                     }
                 }
 
@@ -153,7 +167,11 @@ fun NearbyDevicesScreen(
                                 dispositivoBLE = dispositivoBLE,
                                 onClickConnect = {
                                     bluetoothViewModel.connectToDevice(dispositivoBLE.device)
-                                }
+                                },
+                                onClickDisconnect = {
+                                    bluetoothViewModel.disconnectDevice()
+                                },
+                                bluetoothConnectionState = connectionState
                             )
                         }
                     }
@@ -166,7 +184,9 @@ fun NearbyDevicesScreen(
 @Composable
 fun CardDispositivoBLE(
     dispositivoBLE: DispositivoBLE,
-    onClickConnect: (BluetoothDevice) -> Unit
+    onClickConnect: (BluetoothDevice) -> Unit,
+    onClickDisconnect: () -> Unit,
+    bluetoothConnectionState: BluetoothConnectionState
 ) {
     ElevatedCard(
         modifier = Modifier
@@ -200,7 +220,12 @@ fun CardDispositivoBLE(
                 Text(text = "Rssi: ${dispositivoBLE.rssi}", color = Color.DarkGray)
             }
             Button(
-                onClick = { onClickConnect(dispositivoBLE.device) },
+                onClick = {
+                    if(bluetoothConnectionState == BluetoothConnectionState.DISCONNECTED){
+                        onClickConnect(dispositivoBLE.device)
+                    }else if(bluetoothConnectionState == BluetoothConnectionState.CONNECTED){
+                        onClickDisconnect()
+                    } },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Green,
                     contentColor = Color.Black,
@@ -208,22 +233,8 @@ fun CardDispositivoBLE(
                     disabledContentColor = Color.DarkGray
                 )
             ) {
-                Text(text = "Connect")
+                Text(text = if(bluetoothConnectionState == BluetoothConnectionState.DISCONNECTED) "Connect" else "Disconnect")
             }
         }
     }
 }
-
-
-//@Preview
-//@Composable
-//private fun CardDispositivoPreview() {
-//    CardDispositivoBLE(
-//        DispositivoBLE(
-//            nome = "Iphone(10)",
-//            indirizzo = "123456789",
-//            rssi = 10,
-//            device = null
-//        )
-//    )
-//}

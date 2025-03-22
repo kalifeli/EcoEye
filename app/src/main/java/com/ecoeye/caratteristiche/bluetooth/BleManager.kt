@@ -5,17 +5,17 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Handler
-import android.os.Looper
-
 import android.util.Log
 import androidx.core.app.ActivityCompat
+import java.util.UUID
 
 private const val SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 private const val CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
+@Suppress("DEPRECATION")
 @SuppressLint("MissingPermission")
 class BleManager(private val context: Context) {
 
@@ -29,8 +29,6 @@ class BleManager(private val context: Context) {
     // Memorizza l'ultimo dispositivo tentato (utile per il retry)
     private var lastDevice: BluetoothDevice? = null
 
-    // Handler per posticipare il retry
-    private val handler = Handler(Looper.getMainLooper())
     /**
      * Avvia la connessione diretta al dispositivo BLE.
      * L'oggetto BluetoothDevice si ottiene dallo scanning.
@@ -99,6 +97,64 @@ class BleManager(private val context: Context) {
         override fun onMtuChanged(gatt: BluetoothGatt?, mtu: Int, status: Int) {
             super.onMtuChanged(gatt, mtu, status)
 
+        }
+
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt?,
+            characteristic: BluetoothGattCharacteristic?,
+            status: Int
+        ) {
+            super.onCharacteristicWrite(gatt, characteristic, status)
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.d("BleService", "Scrittura completata con successo per: ${characteristic?.uuid}")
+            } else {
+                Log.e("BleService", "Errore nella scrittura della caratteristica, status: $status")
+            }
+        }
+    }
+
+    fun writeText(text: String){
+        val gatt = bluetoothGatt
+
+        if(gatt == null){
+            Log.e("BleService", "Impossibile inviare testo: connessione non stabilita")
+            return
+        }
+
+        //Ottengo il servizio dall'UUID che ho definito
+        val serviceUUID = UUID.fromString(SERVICE_UUID)
+        val service = gatt.getService(serviceUUID)
+        if(service == null){
+            Log.e("BleService", "Servizio non trovato")
+            return
+        }
+
+        //Ottengo la caratteristica dall' UUID che ho definito
+        val characteristicUUID = UUID.fromString(CHARACTERISTIC_UUID)
+        val characteristic = service.getCharacteristic(characteristicUUID)
+        if(characteristic == null ){
+            Log.e("BleService", "Caratteristica BLE non trovata")
+            return
+        }
+
+        // Imposto il tipo di scrittura
+        characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+
+        // Imposto il valore della caratteristica convertendo il testo in byte
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        val result = characteristic.setValue(bytes) //modifica il valore della caratteristica memorizzato localmente nella cache. Restituisce un booleano per capire se l'operazione di set del nuovo valore della caratteristica è andato a buon fine
+
+        if (!result) {
+            Log.e("BleService", "Errore nell'impostazione del valore della caratteristica")
+            return
+        }
+
+        val write = gatt.writeCharacteristic(characteristic)
+
+        if (write) {
+            Log.d("BleService", "Testo inviato: $text")
+        } else {
+            Log.e("BleService", "Scrittura della caratteristica fallita")
         }
     }
     /**

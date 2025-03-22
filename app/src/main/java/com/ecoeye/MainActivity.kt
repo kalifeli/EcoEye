@@ -10,7 +10,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.ecoeye.caratteristiche.bluetooth.BleManager
 import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
 import com.ecoeye.caratteristiche.navigazione.NavGraph
 
@@ -25,12 +24,14 @@ class MainActivity : ComponentActivity() {
         arrayOf(
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_ADVERTISE
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.RECORD_AUDIO
         )
     } else {
         arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.RECORD_AUDIO
         )
     }
 
@@ -78,8 +79,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
         // Inizializza il ViewModel
         bluetoothViewModel = BluetoothViewModel(application)
+        //Controllo e richiedo permessi
         checkAndRequestPermissions()
 
         setContent {

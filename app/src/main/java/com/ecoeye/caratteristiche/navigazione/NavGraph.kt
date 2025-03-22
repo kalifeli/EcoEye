@@ -12,12 +12,11 @@ import com.ecoeye.ui.schermate.NearbyDevicesScreen
 
 @Composable
 fun NavGraph(){
-    val contesto = LocalContext.current
     val navController = rememberNavController()
     val bluetoothViewModel: BluetoothViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = Schermate.Home.rotta ){
-        composable(route = Schermate.Home.rotta) { HomeScreen(navController) }
+        composable(route = Schermate.Home.rotta) { HomeScreen(navController, bluetoothViewModel) }
         composable(route = Schermate.RicercaDispositivi.rotta) { NearbyDevicesScreen(
             bluetoothViewModel = bluetoothViewModel,
             navController = navController

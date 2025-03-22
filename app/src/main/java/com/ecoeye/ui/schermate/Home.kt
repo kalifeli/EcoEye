@@ -2,13 +2,13 @@
 
 package com.ecoeye.ui.schermate
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import android.app.Activity.RESULT_OK
+import android.content.Intent
+import android.speech.RecognizerIntent
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,13 +36,14 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,13 +51,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
 import com.ecoeye.caratteristiche.bluetooth.QuickMessage
 import com.ecoeye.caratteristiche.navigazione.Schermate
 import com.example.ecoeye.R
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: BluetoothViewModel,
 ){
     Box(modifier = Modifier.fillMaxSize()) {
         // Immagine di sfondo
@@ -67,7 +71,6 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Scaffold sovrapposta, con background trasparente
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -102,7 +105,7 @@ fun HomeScreen(
                 )
             }
         ) { paddingValues ->
-            // Box per centrare l'intera colonna verticalmente e orizzontalmente
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -112,12 +115,11 @@ fun HomeScreen(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    AnimatedMicButton(
+                    MicButton(
                         modifier = Modifier,
-                        onClick = {}
+                        viewModel = viewModel
                     )
 
-                    // 2. Titolo "Messaggi Rapidi"
                     Text(
                         text = "Messaggi Rapidi",
                         fontWeight = FontWeight.Bold,
@@ -126,14 +128,12 @@ fun HomeScreen(
                             .padding(vertical = 8.dp, horizontal = 24.dp)
                     )
 
-                    // 3. Divider
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                         thickness = 2.dp,
                         color = Color.Gray
                     )
 
-                    // 4. Griglia dei messaggi
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         modifier = Modifier
@@ -143,7 +143,7 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(QuickMessage.entries) { quickMessage ->
-                            RapidMessage(messaggioRapido = quickMessage)
+                            RapidMessage(messaggioRapido = quickMessage, viewModel = viewModel)
                         }
                     }
                 }
@@ -179,7 +179,8 @@ fun MicrophoneItem(
 
 @Composable
 fun RapidMessage(
-    messaggioRapido: QuickMessage
+    messaggioRapido: QuickMessage,
+    viewModel: BluetoothViewModel,
 ){
     ElevatedCard(
         modifier = Modifier.padding(4.dp),
@@ -188,57 +189,46 @@ fun RapidMessage(
         colors = CardDefaults.elevatedCardColors(
             contentColor = Color.Black,
             containerColor = Color.White
-        )
+        ),
+        onClick = {
+            viewModel.sendText(messaggioRapido.messaggio)
+        }
     ){
         Text(
             text = messaggioRapido.messaggio,
             modifier = Modifier.padding(12.dp)
         )
     }
-
 }
 
 @Composable
-fun AnimatedMicButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+fun MicButton(
+    modifier: Modifier = Modifier,
+    viewModel: BluetoothViewModel
 ) {
-    // L'animazione si avvia quando il pulsante è attivo; qui usiamo un infiniteTransition
-    val infiniteTransition = rememberInfiniteTransition(label = "")
-    // Animiamo un valore che rappresenta la scala dell'onda
-    val waveScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ), label = ""
-    )
-    // Animiamo anche l'alpha (trasparenza) dell'onda
-    val waveAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ), label = ""
-    )
+
+    //Launcher per riconoscimento del parlato
+    val speechLauncher: ActivityResultLauncher<Intent> = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: ""
+            viewModel.sendText(spokenText)
+        } else {
+            Log.e("SpeechToText", "Errore: non è stato possibile riconoscere il testo")
+        }
+    }
+
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
+            .clip(CircleShape)
             .size(120.dp)
-            .clickable { onClick() }
+            .clickable { startSpeechRecognition(speechLauncher) }
+            .border(4.dp, Color.White, CircleShape)
+            .background(colorResource(id = R.color.DarkGreen), CircleShape)
     ) {
-        // Disegna le onde usando un Canvas
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(
-                color = Color.Green.copy(alpha = waveAlpha),
-                radius = size.minDimension / 2 * waveScale,
-                center = center
-            )
-        }
-        // L'icona del microfono sopra l'animazione
         Icon(
             painter = painterResource(id = R.drawable.ic_microfono), // Assicurati di avere questo drawable
             contentDescription = "Microphone Icon",
@@ -248,15 +238,18 @@ fun AnimatedMicButton(
     }
 }
 
+private fun startSpeechRecognition(speechLauncher: ActivityResultLauncher<Intent>) {
+    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        putExtra(RecognizerIntent.EXTRA_PROMPT, "Parla ora...")
+    }
+    speechLauncher.launch(intent)
+}
+
 
 @Preview
 @Composable
 fun MicrophoneItemPreview(){
     MicrophoneItem()
-}
-
-@Preview
-@Composable
-fun RapidMessagePreview(){
-    RapidMessage(messaggioRapido = QuickMessage.COME_STAI)
 }

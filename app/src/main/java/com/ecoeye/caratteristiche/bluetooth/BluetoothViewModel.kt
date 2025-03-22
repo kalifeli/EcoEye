@@ -8,18 +8,17 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 class BluetoothViewModel(application: Application): AndroidViewModel(application), BluetoothController{
-    private val context = getApplication<Application>()
     private val bluetoothManager by lazy {
         application.getSystemService(BluetoothManager::class.java)
     }
@@ -56,26 +55,6 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
     private val _pairedDevices: MutableStateFlow<List<DispositivoBLE>> = MutableStateFlow(emptyList())
     override val pairedDevies: StateFlow<List<DispositivoBLE>> = _pairedDevices
 
-    // Seleziona i permessi richiesti in base alla versione Android
-    private val requiredPermissions: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        arrayOf(
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-        )
-    } else {
-        arrayOf(
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-    }
-
-    fun hasPermission(): Boolean{
-        return requiredPermissions.all { permesso ->
-            ContextCompat.checkSelfPermission(context,permesso) == PackageManager.PERMISSION_GRANTED
-        }
-    }
 
     fun addScannedDevice(newDevice: DispositivoBLE){
         handler.post {
@@ -177,5 +156,14 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
         disconnectDevice()
     }
 
-
+    fun sendText(text: String){
+        if(_connectionState.value == BluetoothConnectionState.CONNECTED){
+            viewModelScope.launch {
+                bleManager.writeText(text)
+            }
+            Log.d("BluetoothViewModel", "testo inviato")
+        }else{
+            Log.d("BluetoothViewModel", "errore nell'invio del testo")
+        }
+    }
 }

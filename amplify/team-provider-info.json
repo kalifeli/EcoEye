@@ -1,0 +1,26 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-ecoeye2-dev-500bd-authRole",
+      "UnauthRoleArn": "arn:aws:iam::564992080863:role/amplify-ecoeye2-dev-500bd-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::564992080863:role/amplify-ecoeye2-dev-500bd-authRole",
+      "Region": "eu-central-1",
+      "DeploymentBucketName": "amplify-ecoeye2-dev-500bd-deployment",
+      "UnauthRoleName": "amplify-ecoeye2-dev-500bd-unauthRole",
+      "StackName": "amplify-ecoeye2-dev-500bd",
+      "StackId": "arn:aws:cloudformation:eu-central-1:564992080863:stack/amplify-ecoeye2-dev-500bd/bcc0fbc0-1f64-11f0-9594-023b874bd39b",
+      "AmplifyAppId": "d1prkmh62y40o4"
+    },
+    "categories": {
+      "auth": {
+        "ecoeye2d16085b1d16085b1": {}
+      },
+      "storage": {
+        "ecoeye2f59e6805": {
+          "bucketName": "ecoeye-demo-bucket",
+          "region": "eu-central-1"
+        }
+      }
+    }
+  }
+}

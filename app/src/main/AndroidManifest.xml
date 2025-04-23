@@ -23,6 +23,9 @@
     <!-- Permesso per l'utilizzo del microfono -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Permesso per l'utilizzo della rete -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
 
     <application
         android:allowBackup="true"

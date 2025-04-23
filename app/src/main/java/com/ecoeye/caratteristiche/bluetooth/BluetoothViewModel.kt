@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -54,6 +55,10 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
     override val scannedDevices: StateFlow<List<DispositivoBLE>> = _scannedDevices
     private val _pairedDevices: MutableStateFlow<List<DispositivoBLE>> = MutableStateFlow(emptyList())
     override val pairedDevies: StateFlow<List<DispositivoBLE>> = _pairedDevices
+
+    private val _recording: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val recording: StateFlow<Boolean> = _recording
+
 
 
     fun addScannedDevice(newDevice: DispositivoBLE){
@@ -100,8 +105,6 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
         }
 
     }
-
-
 
     override fun startDiscovery() {
             if (!_scanning.value) {
@@ -156,6 +159,7 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
         disconnectDevice()
     }
 
+
     fun sendText(text: String){
         if(_connectionState.value == BluetoothConnectionState.CONNECTED){
             viewModelScope.launch {
@@ -166,4 +170,26 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
             Log.d("BluetoothViewModel", "errore nell'invio del testo")
         }
     }
+
+    fun startRecording(audioRecorderManager: AudioRecorderManager){
+        try {
+            _recording.value = true
+            audioRecorderManager.startRecording()
+        }catch (e: Exception){
+            Log.e("BluetoothViewModel", "errore nella registrazione:", e)
+        }
+    }
+
+    fun stopRecording(audioRecorderManager: AudioRecorderManager){
+        viewModelScope.launch {
+            try {
+                audioRecorderManager.stopRecording()
+                _recording.value = false
+                Log.d("BluetoothViewModel", "stopRecording")
+            }catch (e:Exception) {
+                Log.e("BluetoothViewModel", "errore nel caricamento:", e)
+            }
+        }
+    }
+
 }

@@ -157,6 +157,44 @@ class BleManager(private val context: Context) {
             Log.e("BleService", "Scrittura della caratteristica fallita")
         }
     }
+
+    fun sendAudioData(audioData : ByteArray){
+        val gatt = bluetoothGatt ?: run {
+            Log.e("BleService", "Connessione non stabilita per invio audio")
+            return
+        }
+
+        //Ottengo il servizio dall'UUID che ho definito
+        val serviceUUID = UUID.fromString(SERVICE_UUID)
+        val service = gatt.getService(serviceUUID) ?: run {
+            Log.e("BleService", "Servizio BLE non trovato")
+            return
+        }
+
+        //Ottengo la caratteristica dall' UUID che ho definito
+        val characteristicUUID = UUID.fromString(CHARACTERISTIC_UUID)
+        val characteristic = service.getCharacteristic(characteristicUUID) ?: run {
+            Log.e("BleService", "Caratteristica BLE non trovata")
+            return
+        }
+
+        // VERIFICA SE E' NECESSARIA LA FRAMMENTAZIONE DEI DATI
+
+        characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+
+        val result = characteristic.setValue(audioData)
+        if (!result) {
+            Log.e("BleService", "Errore nell'impostazione dei dati audio")
+            return
+        }
+        val write = gatt.writeCharacteristic(characteristic)
+
+        if (write) {
+            Log.d("BleService", "Audio inviato, lunghezza: ${audioData.size} bytes")
+        } else {
+            Log.e("BleService", "Scrittura dei dati audio fallita")
+        }
+    }
     /**
      * Permette di chiudere la connessione GATT liberando le risorse.
      */

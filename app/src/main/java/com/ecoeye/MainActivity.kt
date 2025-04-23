@@ -2,6 +2,7 @@ package com.ecoeye
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,7 +11,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.amplifyframework.AmplifyException
+import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
+import com.amplifyframework.core.Amplify
+import com.amplifyframework.storage.s3.AWSS3StoragePlugin
 import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
+import com.ecoeye.caratteristiche.comunicazione.MqttViewModel
 import com.ecoeye.caratteristiche.navigazione.NavGraph
 
 private  const val REQUEST_CODE_PERMISSIONS = 1001
@@ -18,6 +24,7 @@ private  const val REQUEST_CODE_PERMISSIONS = 1001
 class MainActivity : ComponentActivity() {
 
     private lateinit var bluetoothViewModel: BluetoothViewModel
+    private lateinit var mqttViewModel: MqttViewModel
 
 
     private val requiredPermissions: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -79,11 +86,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         // Inizializza il ViewModel
         bluetoothViewModel = BluetoothViewModel(application)
-        //Controllo e richiedo permessi
+        mqttViewModel = MqttViewModel(application)
+
+        mqttViewModel.connectAWS()
+
+        //Controllo e richiesta dei permessi necessari
         checkAndRequestPermissions()
+
+        // COnfigurazione Amplify
+        configureAmplify(application)
 
         setContent {
             NavGraph()
@@ -99,5 +112,16 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         // libero le risorse
         bluetoothViewModel.disconnectDevice()
+    }
+}
+
+private fun configureAmplify(applicationContext: Context){
+    try {
+        Amplify.addPlugin(AWSCognitoAuthPlugin())
+        Amplify.addPlugin(AWSS3StoragePlugin())
+        Amplify.configure(applicationContext)
+        Log.i("Amplify", "Amplify initialized")
+    } catch (error: AmplifyException) {
+        Log.e("Amplify", "Error initializing Amplify", error)
     }
 }

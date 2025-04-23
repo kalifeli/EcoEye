@@ -2,13 +2,9 @@
 
 package com.ecoeye.ui.schermate
 
-import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.speech.RecognizerIntent
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,8 +48,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.ecoeye.caratteristiche.bluetooth.AudioRecorderManager
 import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
 import com.ecoeye.caratteristiche.bluetooth.QuickMessage
+import com.ecoeye.caratteristiche.comunicazione.MqttViewModel
 import com.ecoeye.caratteristiche.navigazione.Schermate
 import com.example.ecoeye.R
 import java.util.Locale
@@ -61,7 +60,11 @@ import java.util.Locale
 fun HomeScreen(
     navController: NavController,
     viewModel: BluetoothViewModel,
+    mqttViewModel: MqttViewModel,
+    audioRecorderManager: AudioRecorderManager
 ){
+    val recording by viewModel.recording.collectAsState()
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Immagine di sfondo
         Image(
@@ -117,7 +120,9 @@ fun HomeScreen(
                 ) {
                     MicButton(
                         modifier = Modifier,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        audioRecorderManager = audioRecorderManager,
+                        recording
                     )
 
                     Text(
@@ -143,7 +148,7 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(QuickMessage.entries) { quickMessage ->
-                            RapidMessage(messaggioRapido = quickMessage, viewModel = viewModel)
+                            RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
                         }
                     }
                 }
@@ -153,35 +158,12 @@ fun HomeScreen(
 }
 
 @Composable
-fun MicrophoneItem(
-    //onClick: () -> Unit,
-    backgroundColor: Color = Color.White,
-    iconTint: Color = Color.Black,
-    size: Int = 120
-){
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(size.dp)
-            .border(3.dp, Color.Black, CircleShape)
-            .background(color = backgroundColor, shape = CircleShape)
-        //.clickable { onClick() }
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_microfono),
-            contentDescription = "Microphone Icon",
-            tint = iconTint,
-            modifier = Modifier.size((size / 2).dp)
-        )
-    }
-
-}
-
-@Composable
 fun RapidMessage(
     messaggioRapido: QuickMessage,
-    viewModel: BluetoothViewModel,
+    viewModel: MqttViewModel,
 ){
+    val isConnected by viewModel.isConnected.collectAsState()
+
     ElevatedCard(
         modifier = Modifier.padding(4.dp),
         elevation = CardDefaults.cardElevation(6.dp),
@@ -191,7 +173,9 @@ fun RapidMessage(
             containerColor = Color.White
         ),
         onClick = {
-            viewModel.sendText(messaggioRapido.messaggio)
+            if(isConnected){
+                viewModel.publishAWS(messaggioRapido.messaggio)
+            }
         }
     ){
         Text(
@@ -204,30 +188,29 @@ fun RapidMessage(
 @Composable
 fun MicButton(
     modifier: Modifier = Modifier,
-    viewModel: BluetoothViewModel
+    viewModel: BluetoothViewModel,
+    audioRecorderManager: AudioRecorderManager,
+    recording: Boolean
 ) {
-
-    //Launcher per riconoscimento del parlato
-    val speechLauncher: ActivityResultLauncher<Intent> = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: ""
-            viewModel.sendText(spokenText)
-        } else {
-            Log.e("SpeechToText", "Errore: non è stato possibile riconoscere il testo")
-        }
-    }
-
-
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .clip(CircleShape)
             .size(120.dp)
-            .clickable { startSpeechRecognition(speechLauncher) }
+            .clickable {
+                if (!recording) {
+                    // se non stiamo registrando, allora inizia la registrazione
+                    viewModel.startRecording(audioRecorderManager)
+                } else {
+                    // se stiamo registrando, allora interrompe la registrazione
+                    viewModel.stopRecording(audioRecorderManager)
+                }
+            }
             .border(4.dp, Color.White, CircleShape)
-            .background(colorResource(id = R.color.DarkGreen), CircleShape)
+            .background(
+                if (recording) Color.Cyan else colorResource(id = R.color.DarkGreen),
+                CircleShape
+            )
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_microfono), // Assicurati di avere questo drawable
@@ -238,18 +221,3 @@ fun MicButton(
     }
 }
 
-private fun startSpeechRecognition(speechLauncher: ActivityResultLauncher<Intent>) {
-    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        putExtra(RecognizerIntent.EXTRA_PROMPT, "Parla ora...")
-    }
-    speechLauncher.launch(intent)
-}
-
-
-@Preview
-@Composable
-fun MicrophoneItemPreview(){
-    MicrophoneItem()
-}

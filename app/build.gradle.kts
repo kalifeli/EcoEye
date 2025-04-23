@@ -67,4 +67,12 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.navigation.compose)
+
+    // --- Dipendenze Amplify ---
+    implementation(libs.core)
+    implementation(libs.aws.auth.cognito)
+    implementation(libs.aws.storage.s3)
+
+    // --- AWS Android SDK ---
+    implementation(libs.aws.android.sdk.iot)
 }

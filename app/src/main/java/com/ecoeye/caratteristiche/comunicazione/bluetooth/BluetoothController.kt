@@ -1,4 +1,4 @@
-package com.ecoeye.caratteristiche.bluetooth
+package com.ecoeye.caratteristiche.comunicazione.bluetooth
 
 import kotlinx.coroutines.flow.StateFlow
 
@@ -10,8 +10,6 @@ interface BluetoothController{
 
     fun startDiscovery()
     fun stopDiscovery()
-
-
 
     fun release()
 }

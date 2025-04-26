@@ -2,9 +2,6 @@
 
 package com.ecoeye.ui.schermate
 
-import android.content.Intent
-import android.speech.RecognizerIntent
-import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,26 +41,32 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.ecoeye.caratteristiche.bluetooth.AudioRecorderManager
-import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
-import com.ecoeye.caratteristiche.bluetooth.QuickMessage
-import com.ecoeye.caratteristiche.comunicazione.MqttViewModel
+import com.ecoeye.caratteristiche.comunicazione.wifi.AudioRecorderManager
+import com.ecoeye.caratteristiche.comunicazione.wifi.MqttViewModel
+import com.ecoeye.caratteristiche.comunicazione.wifi.QuickMessage
 import com.ecoeye.caratteristiche.navigazione.Schermate
 import com.example.ecoeye.R
-import java.util.Locale
 
+/**
+ * Schermata Home in cui l'utente può comunicare con il dispositivo EcoEye tramite voce o messaggi istantanei.
+ * @param navController, controller per gestire la navigazione tra la schermata Home e NearbyDevicesScreen
+ * @param mqttViewModel viewModel che fornisce funzionalità per iniziare e interrompere la registrazione o
+ * permettere l'invio di messaggi rapidi
+ * @param audioRecorderManager classe che fornisce tutti i servizi necessari per sfruttare il microfono integrato del dispositivo
+ * , registrare, salvare la registrazione e caricarla nel bucket S3
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: BluetoothViewModel,
     mqttViewModel: MqttViewModel,
     audioRecorderManager: AudioRecorderManager
 ){
-    val recording by viewModel.recording.collectAsState()
+    val recording by mqttViewModel.recording.collectAsState()
+    val isConneted by mqttViewModel.isConnected.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Immagine di sfondo
@@ -120,9 +123,10 @@ fun HomeScreen(
                 ) {
                     MicButton(
                         modifier = Modifier,
-                        viewModel = viewModel,
+                        viewModel = mqttViewModel,
                         audioRecorderManager = audioRecorderManager,
-                        recording
+                        recording = recording,
+                        isConnected = isConneted
                     )
 
                     Text(
@@ -147,8 +151,13 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Sezione domande rapide
                         items(QuickMessage.entries) { quickMessage ->
-                            RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
+                            if(quickMessage.isQuestion)RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
+                        }
+                        // Sezione risposte rapide
+                        items(QuickMessage.entries) { quickMessage ->
+                            if(!quickMessage.isQuestion)RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
                         }
                     }
                 }
@@ -157,17 +166,25 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Questa funzione rappresenta un messaggio istantaneo visualizzabile nella UI come una Card.
+ * Utile per facilitare la comunicazione quando non è essenziale usufruire del microfono
+ * @param messaggioRapido istanza della classe QuickMessage. Rappresenta un messaggio rapido da inviare alla non udente.
+ * @param viewModel rappresenta la classe contenente la logica per la comunicazione MQTT.
+ */
 @Composable
 fun RapidMessage(
     messaggioRapido: QuickMessage,
     viewModel: MqttViewModel,
 ){
     val isConnected by viewModel.isConnected.collectAsState()
+    val isRecording by viewModel.isConnected.collectAsState()
 
     ElevatedCard(
         modifier = Modifier.padding(4.dp),
         elevation = CardDefaults.cardElevation(6.dp),
         shape = RoundedCornerShape(12.dp),
+        enabled = isConnected && isRecording,
         colors = CardDefaults.elevatedCardColors(
             contentColor = Color.Black,
             containerColor = Color.White
@@ -185,12 +202,17 @@ fun RapidMessage(
     }
 }
 
+/**
+ * Pulsante che permette di avviare o terminare la regisgtrazione del parlato.
+ * Il primo click avvia la registrazione. Il secondo la termina.
+ */
 @Composable
 fun MicButton(
     modifier: Modifier = Modifier,
-    viewModel: BluetoothViewModel,
+    viewModel: MqttViewModel,
     audioRecorderManager: AudioRecorderManager,
-    recording: Boolean
+    recording: Boolean,
+    isConnected: Boolean
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -198,17 +220,19 @@ fun MicButton(
             .clip(CircleShape)
             .size(120.dp)
             .clickable {
-                if (!recording) {
-                    // se non stiamo registrando, allora inizia la registrazione
-                    viewModel.startRecording(audioRecorderManager)
-                } else {
-                    // se stiamo registrando, allora interrompe la registrazione
-                    viewModel.stopRecording(audioRecorderManager)
+                if (isConnected) {
+                    if (!recording) {
+                        // se non stiamo registrando, allora inizia la registrazione
+                        viewModel.startRecording(audioRecorderManager)
+                    } else {
+                        // se stiamo registrando, allora interrompe la registrazione
+                        viewModel.stopRecording(audioRecorderManager)
+                    }
                 }
             }
-            .border(4.dp, Color.White, CircleShape)
+            .border(4.dp, if (recording) Color.Red else Color.White, CircleShape)
             .background(
-                if (recording) Color.Cyan else colorResource(id = R.color.DarkGreen),
+                colorResource(id = R.color.DarkGreen),
                 CircleShape
             )
     ) {

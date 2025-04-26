@@ -1,4 +1,4 @@
-package com.ecoeye.caratteristiche.bluetooth
+package com.ecoeye.caratteristiche.comunicazione.bluetooth
 
 enum class BluetoothConnectionState {
     DISCONNECTED,

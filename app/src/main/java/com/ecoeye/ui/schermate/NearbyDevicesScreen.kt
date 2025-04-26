@@ -44,9 +44,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.ecoeye.caratteristiche.bluetooth.BluetoothConnectionState
-import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
-import com.ecoeye.caratteristiche.bluetooth.DispositivoBLE
+import com.ecoeye.caratteristiche.comunicazione.bluetooth.BluetoothConnectionState
+import com.ecoeye.caratteristiche.comunicazione.bluetooth.BluetoothViewModel
+import com.ecoeye.caratteristiche.comunicazione.bluetooth.DispositivoBLE
 import com.example.ecoeye.R
 
 @OptIn(ExperimentalMaterial3Api::class)

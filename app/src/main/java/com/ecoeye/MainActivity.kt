@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -15,8 +14,8 @@ import com.amplifyframework.AmplifyException
 import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
 import com.amplifyframework.core.Amplify
 import com.amplifyframework.storage.s3.AWSS3StoragePlugin
-import com.ecoeye.caratteristiche.bluetooth.BluetoothViewModel
-import com.ecoeye.caratteristiche.comunicazione.MqttViewModel
+import com.ecoeye.caratteristiche.comunicazione.bluetooth.BluetoothViewModel
+import com.ecoeye.caratteristiche.comunicazione.wifi.MqttViewModel
 import com.ecoeye.caratteristiche.navigazione.NavGraph
 
 private  const val REQUEST_CODE_PERMISSIONS = 1001
@@ -26,22 +25,20 @@ class MainActivity : ComponentActivity() {
     private lateinit var bluetoothViewModel: BluetoothViewModel
     private lateinit var mqttViewModel: MqttViewModel
 
-
-    private val requiredPermissions: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    /**
+     * Lista dei permessi necessari per le funzionalitò dell'applicazione.
+     */
+    private val requiredPermissions: Array<String> =
         arrayOf(
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.BLUETOOTH_ADVERTISE,
             Manifest.permission.RECORD_AUDIO
         )
-    } else {
-        arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.RECORD_AUDIO
-        )
-    }
 
+    /**
+     * Funzione per il controllo dei permessi e la loro richiesta.
+     */
     private fun checkAndRequestPermissions(){
         // Lista che contiene i permessi ancora non concessi
         val permissionsToRequest = requiredPermissions.filter { permission ->
@@ -82,7 +79,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -115,6 +111,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Funzione utile per la configurazione di Amplify, utile per interagire con i servizi AWS
+ */
 private fun configureAmplify(applicationContext: Context){
     try {
         Amplify.addPlugin(AWSCognitoAuthPlugin())

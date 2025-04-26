@@ -1,4 +1,4 @@
-package com.ecoeye.caratteristiche.bluetooth
+package com.ecoeye.caratteristiche.comunicazione.bluetooth
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -13,13 +13,11 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
-class BluetoothViewModel(application: Application): AndroidViewModel(application), BluetoothController{
+class BluetoothViewModel(application: Application): AndroidViewModel(application),
+    BluetoothController {
     private val bluetoothManager by lazy {
         application.getSystemService(BluetoothManager::class.java)
     }
@@ -33,7 +31,9 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
     // Istanza del BleManager
     private val bleManager = BleManager(application)
 
-    private val _connectionState : MutableStateFlow<BluetoothConnectionState> = MutableStateFlow(BluetoothConnectionState.DISCONNECTED)
+    private val _connectionState : MutableStateFlow<BluetoothConnectionState> = MutableStateFlow(
+        BluetoothConnectionState.DISCONNECTED
+    )
     val connectionState : StateFlow<BluetoothConnectionState> = _connectionState
 
     init {
@@ -56,8 +56,7 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
     private val _pairedDevices: MutableStateFlow<List<DispositivoBLE>> = MutableStateFlow(emptyList())
     override val pairedDevies: StateFlow<List<DispositivoBLE>> = _pairedDevices
 
-    private val _recording: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val recording: StateFlow<Boolean> = _recording
+
 
 
 
@@ -157,39 +156,6 @@ class BluetoothViewModel(application: Application): AndroidViewModel(application
     override fun onCleared() {
         super.onCleared()
         disconnectDevice()
-    }
-
-
-    fun sendText(text: String){
-        if(_connectionState.value == BluetoothConnectionState.CONNECTED){
-            viewModelScope.launch {
-                bleManager.writeText(text)
-            }
-            Log.d("BluetoothViewModel", "testo inviato")
-        }else{
-            Log.d("BluetoothViewModel", "errore nell'invio del testo")
-        }
-    }
-
-    fun startRecording(audioRecorderManager: AudioRecorderManager){
-        try {
-            _recording.value = true
-            audioRecorderManager.startRecording()
-        }catch (e: Exception){
-            Log.e("BluetoothViewModel", "errore nella registrazione:", e)
-        }
-    }
-
-    fun stopRecording(audioRecorderManager: AudioRecorderManager){
-        viewModelScope.launch {
-            try {
-                audioRecorderManager.stopRecording()
-                _recording.value = false
-                Log.d("BluetoothViewModel", "stopRecording")
-            }catch (e:Exception) {
-                Log.e("BluetoothViewModel", "errore nel caricamento:", e)
-            }
-        }
     }
 
 }

@@ -1,4 +1,4 @@
-package com.ecoeye.caratteristiche.bluetooth
+package com.ecoeye.caratteristiche.comunicazione.bluetooth
 
 import android.Manifest
 import android.annotation.SuppressLint

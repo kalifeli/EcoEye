@@ -1,4 +1,7 @@
 # EcoEye
+
+![Frame 1](https://github.com/user-attachments/assets/d67bf186-2baa-4f65-a96b-6cf18b31b8bb)
+
 Il progetto EcoEye permette la comunicazione tra un dispositivo ESP32 e un'app Android tramite AWS IoT Core,
 offrendo funzionalità di riconoscimento vocale (registrazione e upload audio) e messaggistica MQTT.
 

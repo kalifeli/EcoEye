@@ -13,8 +13,10 @@ E' possibile ottenere maggiori informazioni sul processo di realizzazione del pr
   * ESP32
   * Display OLED I2C
   * Cavi Jumper
-*  Software ESP32:
+    
+* Software ESP32:
   * Arduino IDE
+    
 * Software Android:
   * Android Studio
   * JDK 11+
@@ -23,11 +25,32 @@ E' possibile ottenere maggiori informazioni sul processo di realizzazione del pr
 * Account AWS
 * Una connessione ad internet
 
-## Configurazione delle credenziali
 
-Per poter eseguire correttamente il progetto, è necessario configurare due file di impostazioni:
-* Uno per il firmware ESP32
-* Uno per l'app Android
+## Utilizzo
+
+### ESP32
+
+* Al boot si connette al WiFi e ad AWS IoT;
+* sottoscrive un topic MQTT e si mette in attesa dell'arrivo di una trascrizione
+
+### App Android:
+
+* Premi il microfono per registrare audio e inviare la trascrizione al firmware
+* Usa la sezione “Messaggi Rapidi” per inviare testi predefiniti
+
+## Configurazione 
+
+1. Clona la repositoty su un nuovo progetto di Android Studio.
+2. Installa Arduino IDE e installa le seguenti librerie:
+   - `Wire.h`
+   - `Adafruit_SSD1306.h`
+   - `WiFi.h`
+   - `WiFiClientSecure.h`
+   - `PubSubClient.h`
+   - `ArduinoJson.h`
+3. Per poter eseguire correttamente il progetto, è necessario configurare due file di impostazioni:
+ * Uno per il firmware ESP32
+ * Uno per l'app Android
   
 ### Configurazione ESP32
 
@@ -186,18 +209,13 @@ object Config {
          }
 
    ```
+Una volta terminata la configurazione è arrivato il momento di generare l'apk della nostra applicazione.
 
-## Utilizzo
+1. Recati nella sezione `Build` -> `Build APK`
+2. Verrà prodotta il file eseguibile dell'applicazione
 
-### ESP32
-
-* Al boot si connette al WiFi e ad AWS IoT;
-* sottoscrive/publishes MQTT su topic esp32/trascrizione/in e esp32/trascrizione/out
-
-### App Android:
-
-* Premi il microfono per registrare audio e inviare la trascrizione al firmware
-* Usa la sezione “Messaggi Rapidi” per inviare testi predefiniti
+> [!WARNING]
+> Ricorda che è prima necessario eseguire la configurazione del progetto per renderlo funzionante!
 
 ## Contribuire
 

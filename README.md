@@ -60,6 +60,8 @@ object Config {
     const val AWS_IOT_TOPIC = "_YOUR_AWS_IOT_SUBSCRIBE_TOPIC_"
 }
 ```
+>[!NOTE]
+> Una volta configurato questo file è possibile eseguire l'applicazione su un dispositivo reale o su un emulatore.
 
 ### Configurazione AWS
 
@@ -181,3 +183,23 @@ object Config {
          }
 
    ```
+
+## Utilizzo
+
+### ESP32
+
+* Al boot si connette al WiFi e ad AWS IoT;
+* sottoscrive/publishes MQTT su topic esp32/trascrizione/in e esp32/trascrizione/out
+
+### App Android:
+
+* Premi il microfono per registrare audio e inviare la trascrizione al firmware
+* Usa la sezione “Messaggi Rapidi” per inviare testi predefiniti
+
+## Contribuire
+
+Apri issue o crea pull request
+
+## Contatti
+
+Per maggiori informazioni [felizianiale34@gmail.com](mailto:felizianiale34@gmail.com)

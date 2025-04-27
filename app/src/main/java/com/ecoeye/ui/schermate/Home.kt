@@ -2,6 +2,7 @@
 
 package com.ecoeye.ui.schermate
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +33,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +51,7 @@ import com.ecoeye.caratteristiche.comunicazione.wifi.AudioRecorderManager
 import com.ecoeye.caratteristiche.comunicazione.wifi.MqttViewModel
 import com.ecoeye.caratteristiche.comunicazione.wifi.QuickMessage
 import com.ecoeye.caratteristiche.navigazione.Schermate
+import com.ecoeye.util.isInternetAvailable
 import com.example.ecoeye.R
 
 /**
@@ -63,10 +67,15 @@ import com.example.ecoeye.R
 fun HomeScreen(
     navController: NavController,
     mqttViewModel: MqttViewModel,
-    audioRecorderManager: AudioRecorderManager
+    audioRecorderManager: AudioRecorderManager,
+    context: Context
 ){
+    // Variabili di stato per gestire: lo stato della registrazione del parlato,
+    // la connessione al broker MQTT e ad internet
     val recording by mqttViewModel.recording.collectAsState()
-    val isConneted by mqttViewModel.isConnected.collectAsState()
+    val isConnetedToAWS by mqttViewModel.isConnectedToAWS.collectAsState()
+
+    val isConnected = remember { mutableStateOf(isInternetAvailable(context)) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Immagine di sfondo
@@ -112,52 +121,59 @@ fun HomeScreen(
             }
         ) { paddingValues ->
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+            if(!isConnected.value || !isConnetedToAWS){
+                NoInternetScreen {
+                    isConnected.value = isInternetAvailable(context)
+                    mqttViewModel.connectAWS()
+                }
+            }else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
                 ) {
-                    MicButton(
-                        modifier = Modifier,
-                        viewModel = mqttViewModel,
-                        audioRecorderManager = audioRecorderManager,
-                        recording = recording,
-                        isConnected = isConneted
-                    )
-
-                    Text(
-                        text = "Messaggi Rapidi",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        modifier = Modifier
-                            .padding(vertical = 8.dp, horizontal = 24.dp)
-                    )
-
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                        thickness = 2.dp,
-                        color = Color.Gray
-                    )
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier
-                            .padding(12.dp),
-                        contentPadding = PaddingValues(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Sezione domande rapide
-                        items(QuickMessage.entries) { quickMessage ->
-                            if(quickMessage.isQuestion)RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
-                        }
-                        // Sezione risposte rapide
-                        items(QuickMessage.entries) { quickMessage ->
-                            if(!quickMessage.isQuestion)RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
+                        MicButton(
+                            modifier = Modifier,
+                            viewModel = mqttViewModel,
+                            audioRecorderManager = audioRecorderManager,
+                            recording = recording,
+                            isConnected = isConnetedToAWS
+                        )
+
+                        Text(
+                            text = "Messaggi Rapidi",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            modifier = Modifier
+                                .padding(vertical = 8.dp, horizontal = 24.dp)
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                            thickness = 2.dp,
+                            color = Color.Gray
+                        )
+
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier
+                                .padding(12.dp),
+                            contentPadding = PaddingValues(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Sezione domande rapide
+                            items(QuickMessage.entries) { quickMessage ->
+                                if(quickMessage.isQuestion)RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
+                            }
+                            // Sezione risposte rapide
+                            items(QuickMessage.entries) { quickMessage ->
+                                if(!quickMessage.isQuestion)RapidMessage(messaggioRapido = quickMessage, viewModel = mqttViewModel)
+                            }
                         }
                     }
                 }
@@ -177,8 +193,8 @@ fun RapidMessage(
     messaggioRapido: QuickMessage,
     viewModel: MqttViewModel,
 ){
-    val isConnected by viewModel.isConnected.collectAsState()
-    val isRecording by viewModel.isConnected.collectAsState()
+    val isConnected by viewModel.isConnectedToAWS.collectAsState()
+    val isRecording by viewModel.isConnectedToAWS.collectAsState()
 
     ElevatedCard(
         modifier = Modifier.padding(4.dp),

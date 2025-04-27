@@ -63,8 +63,8 @@ class MqttViewModel(
     /**
      * Stato di connessione MQTT: true se connesso, false altrimenti.
      */
-    private val _isConnected = MutableStateFlow(false)
-    val isConnected = _isConnected
+    private val _isConnectedToAWS = MutableStateFlow(false)
+    val isConnectedToAWS = _isConnectedToAWS
 
     /**
      * Flag che indica se la registrazione audio è in corso.
@@ -118,15 +118,15 @@ class MqttViewModel(
             when (status) {
                 AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus.Connected -> {
                     Log.i("MQTT","Connesso ad AWS IoT")
-                    _isConnected.value = true
+                    _isConnectedToAWS.value = true
                 }
                 AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus.ConnectionLost -> {
                     Log.w("MQTT","Connessione persa", throwable)
-                    _isConnected.value = false
+                    _isConnectedToAWS.value = false
                 }
                 AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus.Reconnecting -> {
                     Log.i("MQTT","Riconnessione in corso")
-                    _isConnected.value = false
+                    _isConnectedToAWS.value = false
                 }
                 else -> {
                     Log.i("MQTT","Stato MQTT: $status")

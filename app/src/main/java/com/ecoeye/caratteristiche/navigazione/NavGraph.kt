@@ -31,7 +31,7 @@ fun NavGraph(){
 
     NavHost(navController = navController, startDestination = Schermate.Home.rotta ){
         // Schermata principale con trascrizione e registrazione
-        composable(route = Schermate.Home.rotta) { HomeScreen(navController, mqttViewModel,audioRecorderManager) }
+        composable(route = Schermate.Home.rotta) { HomeScreen(navController, mqttViewModel,audioRecorderManager, context) }
         // Schermata di ricerca dispositivi Bluetooth
         composable(route = Schermate.RicercaDispositivi.rotta) { NearbyDevicesScreen(
             bluetoothViewModel = bluetoothViewModel,

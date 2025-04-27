@@ -9,6 +9,10 @@ import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos
 import com.amazonaws.regions.Regions
+import com.ecoeye.util.Config.AWS_IOT_ENDPOINT
+import com.ecoeye.util.Config.AWS_IOT_TOPIC
+import com.ecoeye.util.Config.COGNITO_IDENTITY_POOL_ID
+import com.ecoeye.util.Config.REGION
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -36,14 +40,14 @@ class MqttViewModel(
      */
     private val credentialProvider = CognitoCachingCredentialsProvider(
         application,
-        "eu-central-1:9b701385-b372-47ea-8cc2-8189d77a2b5f",
-        Regions.EU_CENTRAL_1
+        COGNITO_IDENTITY_POOL_ID,
+        REGION
     )
 
     /**
      * Endpoint MQTT di AWS IoT Core (awsiot...amazonaws.com)
      */
-    private val endpoint = "a2f2bxcm4j6lao-ats.iot.eu-central-1.amazonaws.com"
+    private val endpoint = AWS_IOT_ENDPOINT
 
     /**
      * Client ID univoco per la sessione MQTT, generato una sola volta.
@@ -53,7 +57,7 @@ class MqttViewModel(
     /**
      * Client ID univoco per la sessione MQTT, generato una sola volta.
      */
-    private val AWS_IOT_SUBSCRIBE_TOPIC = "esp32/trascrizione/out"
+    private val AWS_IOT_SUBSCRIBE_TOPIC = AWS_IOT_TOPIC
 
     /**
      * Manager AWS IoT MQTT, configurato con clientID ed endpoint.

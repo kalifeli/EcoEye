@@ -41,7 +41,7 @@ E' possibile ottenere maggiori informazioni sul processo di realizzazione del pr
 ## Configurazione 
 
 1. Clona la repositoty su un nuovo progetto di Android Studio.
-2. Installa Arduino IDE e installa le seguenti librerie:
+2. Installa Arduino IDE e le seguenti librerie:
    - `Wire.h`
    - `Adafruit_SSD1306.h`
    - `WiFi.h`
@@ -93,7 +93,7 @@ object Config {
 
 #### IoT Core:
 
-1. Crea un Thing EcoEye_Device e assegna policy che permetta connect/publish/subscribe
+1. Crea un Thing EcoEye_esp32 e assegna policy che permetta connect/publish/subscribe
 2. Scarica i certificati
 
 #### Cognito:
@@ -211,15 +211,15 @@ object Config {
    ```
 Una volta terminata la configurazione è arrivato il momento di generare l'apk della nostra applicazione.
 
-1. Recati nella sezione `Build` -> `Build APK`
-2. Verrà prodotta il file eseguibile dell'applicazione
+1. Recati nella sezione `Build` -> `Build APK` .
+2. Verrà prodotto il file eseguibile dell'applicazione.
 
 > [!WARNING]
-> Ricorda che è prima necessario eseguire la configurazione del progetto per renderlo funzionante!
+> Ricorda che è necessario eseguire la configurazione del progetto per renderlo funzionante!
 
 ## Contribuire
 
-Apri issue o crea pull request
+Ti invito a contribuire al mio progetto! Apri issue o crea pull request.
 
 ## Contatti
 

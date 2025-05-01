@@ -10,6 +10,7 @@ E' possibile ottenere maggiori informazioni sul processo di realizzazione del pr
 ## Requisiti
 
 * Hardware:
+  * Smartphone Android  
   * ESP32
   * Display OLED I2C
   * Cavi Jumper
